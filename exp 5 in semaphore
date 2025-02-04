@@ -1,0 +1,126 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#define BUFFER_SIZE 5
+#define SHM_NAME "/shm_buffer"
+
+typedef struct {
+    int buffer[BUFFER_SIZE];
+    int in, out;
+    sem_t empty, full, mutex;
+} SharedMemory;
+
+// Defining wait() and signal() as wrappers for semaphores
+void wait(sem_t *sem) {
+    sem_wait(sem);
+}
+
+void signal(sem_t *sem) {
+    sem_post(sem);
+}
+
+// Producer function
+void producer(SharedMemory *shm) {
+    int item;
+    printf("Enter item to produce: ");
+    scanf("%d", &item);
+
+    wait(&shm->empty);  // Wait if buffer is full
+    wait(&shm->mutex);  // Lock critical section
+
+    shm->buffer[shm->in] = item;
+    printf("Produced: %d at position %d\n", item, shm->in);
+    shm->in = (shm->in + 1) % BUFFER_SIZE;
+
+    signal(&shm->mutex);  // Unlock critical section
+    signal(&shm->full);   // Signal that an item is available
+}
+
+// Consumer function
+void consumer(SharedMemory *shm) {
+    wait(&shm->full);   // Wait if buffer is empty
+    wait(&shm->mutex);  // Lock critical section
+
+    int item = shm->buffer[shm->out];
+    printf("Consumed: %d from position %d\n", item, shm->out);
+    shm->out = (shm->out + 1) % BUFFER_SIZE;
+
+    signal(&shm->mutex);  // Unlock critical section
+    signal(&shm->empty);  // Signal that a slot is available
+}
+
+// Display function to show buffer contents
+void display(SharedMemory *shm) {
+    wait(&shm->mutex); // Lock critical section
+
+    printf("\nCurrent Buffer: ");
+    int i = shm->out;
+    int count = 0;
+
+    while (count < BUFFER_SIZE) {
+        if (i == shm->in && count > 0) break; // Stop when we reach the last produced item
+        printf("[%d] ", shm->buffer[i]);
+        i = (i + 1) % BUFFER_SIZE;
+        count++;
+    }
+    
+    if (count == 0) printf("Empty");
+    
+    printf("\n");
+
+    signal(&shm->mutex); // Unlock critical section
+}
+
+int main() {
+    int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+    ftruncate(shm_fd, sizeof(SharedMemory));
+    SharedMemory *shm = mmap(NULL, sizeof(SharedMemory), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+    // Initialize buffer indices
+    shm->in = 0;
+    shm->out = 0;
+
+    // Initialize semaphores
+    sem_init(&shm->empty, 1, BUFFER_SIZE);
+    sem_init(&shm->full, 1, 0);
+    sem_init(&shm->mutex, 1, 1);
+
+    int choice;
+    while (1) {
+        printf("\nMain Menu:\n");
+        printf("1. Produce an item\n");
+        printf("2. Consume an item\n");
+        printf("3. Display buffer\n");
+        printf("4. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                producer(shm);
+                break;
+            case 2:
+                consumer(shm);
+                break;
+            case 3:
+                display(shm);
+                break;
+            case 4:
+                printf("Exiting program...\n");
+                munmap(shm, sizeof(SharedMemory));
+                shm_unlink(SHM_NAME);
+                exit(0);
+            default:
+                printf("Invalid choice! Try again.\n");
+        }
+    }
+
+    return 0;
+}
