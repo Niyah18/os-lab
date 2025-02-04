@@ -1,0 +1,20 @@
+#!/bin/bash
+FILE1="filetuff.txt"
+FILE2="filetuffpaste.txt"
+
+# Check if FILE1 exists
+if [[ ! -f "$FILE1" ]]; then
+  echo "Error: $FILE1 does not exist"
+  exit 1
+fi
+
+# Copy contents of FILE1 to FILE2
+cat "$FILE1" > "$FILE2"
+
+# Check if copy was successful
+if [[ $? -eq 0 ]]; then
+  echo "Contents of $FILE1 have been successfully copied to $FILE2"
+else
+  echo "Error occurred while copying contents"
+  exit 1
+fi
