@@ -1,0 +1,143 @@
+#include <stdio.h>
+#include <string.h>
+
+void firstFit(int partitions[], int pSize, int processes[], int n) {
+    int allocation[n];
+    memset(allocation, -1, sizeof(allocation));
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < pSize; j++) {
+            if (partitions[j] >= processes[i]) {
+                allocation[i] = j;
+                partitions[j] -= processes[i];
+                break;
+            }
+        }
+    }
+
+    printf("\nFirst Fit Allocation:\n");
+    printf("Process No.\tProcess Size\tPartition No.\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t\t%d\t\t", i + 1, processes[i]);
+        if (allocation[i] != -1)
+            printf("%d\n", allocation[i] + 1);
+        else
+            printf("Not Allocated\n");
+    }
+}
+
+void worstFit(int partitions[], int pSize, int processes[], int n) {
+    int allocation[n];
+    memset(allocation, -1, sizeof(allocation));
+
+    for (int i = 0; i < n; i++) {
+        int worstIdx = -1;
+        for (int j = 0; j < pSize; j++) {
+            if (partitions[j] >= processes[i]) {
+                if (worstIdx == -1 || partitions[j] > partitions[worstIdx])
+                    worstIdx = j;
+            }
+        }
+        if (worstIdx != -1) {
+            allocation[i] = worstIdx;
+            partitions[worstIdx] -= processes[i];
+        }
+    }
+
+    printf("\nWorst Fit Allocation:\n");
+    printf("Process No.\tProcess Size\tPartition No.\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t\t%d\t\t", i + 1, processes[i]);
+        if (allocation[i] != -1)
+            printf("%d\n", allocation[i] + 1);
+        else
+            printf("Not Allocated\n");
+    }
+}
+
+void bestFit(int partitions[], int pSize, int processes[], int n) {
+    int allocation[n];
+    memset(allocation, -1, sizeof(allocation));
+
+    for (int i = 0; i < n; i++) {
+        int bestIdx = -1;
+        for (int j = 0; j < pSize; j++) {
+            if (partitions[j] >= processes[i]) {
+                if (bestIdx == -1 || partitions[j] < partitions[bestIdx])
+                    bestIdx = j;
+            }
+        }
+        if (bestIdx != -1) {
+            allocation[i] = bestIdx;
+            partitions[bestIdx] -= processes[i];
+        }
+    }
+
+    printf("\nBest Fit Allocation:\n");
+    printf("Process No.\tProcess Size\tPartition No.\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t\t%d\t\t", i + 1, processes[i]);
+        if (allocation[i] != -1)
+            printf("%d\n", allocation[i] + 1);
+        else
+            printf("Not Allocated\n");
+    }
+}
+
+int main() {
+    int pSize, n, choice;
+
+    // Get number of partitions from the user
+    printf("Enter the number of memory partitions: ");
+    scanf("%d", &pSize);
+    int partitions[pSize];
+
+    printf("Enter the sizes of %d partitions: ", pSize);
+    for (int i = 0; i < pSize; i++) {
+        scanf("%d", &partitions[i]);
+    }
+
+    // Get number of processes from the user
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+    int processes[n];
+
+    printf("Enter the sizes of %d processes: ", n);
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &processes[i]);
+    }
+
+    do {
+        printf("\nMemory Allocation Methods:\n");
+        printf("1. First Fit\n");
+        printf("2. Worst Fit\n");
+        printf("3. Best Fit\n");
+        printf("4. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        // Create copies of partitions to avoid modification
+        int partitionsCopy[pSize];
+        memcpy(partitionsCopy, partitions, sizeof(partitions));
+
+        switch (choice) {
+            case 1:
+                firstFit(partitionsCopy, pSize, processes, n);
+                break;
+            case 2:
+                worstFit(partitionsCopy, pSize, processes, n);
+                break;
+            case 3:
+                bestFit(partitionsCopy, pSize, processes, n);
+                break;
+            case 4:
+                printf("Exiting program...\n");
+                break;
+            default:
+                printf("Invalid choice! Please enter a valid option.\n");
+        }
+    } while (choice != 4);
+
+    return 0;
+}
+
