@@ -1,0 +1,232 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Comparison function for integers
+int compare(const void *a, const void *b) {
+    return (*(int*)a - *(int*)b);
+}
+
+// Function to calculate total seek distance for FCFS
+int FCFS(int arr[], int n, int head) {
+    int seek_distance = 0;
+    for (int i = 0; i < n; i++) {
+        seek_distance += abs(arr[i] - head);
+        head = arr[i];
+    }
+    return seek_distance;
+}
+
+// Function to calculate total seek distance for SSTF
+int SSTF(int arr[], int n, int head) {
+    int seek_distance = 0;
+    int visited[n];
+    for (int i = 0; i < n; i++) visited[i] = 0;
+    int count = 0;
+
+    while (count < n) {
+        int min = 9999, index = -1;
+        for (int i = 0; i < n; i++) {
+            if (!visited[i]) {
+                int dist = abs(arr[i] - head);
+                if (dist < min) {
+                    min = dist;
+                    index = i;
+                }
+            }
+        }
+        seek_distance += min;
+        head = arr[index];
+        visited[index] = 1;
+        count++;
+    }
+    return seek_distance;
+}
+
+// Function to calculate total seek distance for SCAN
+int SCAN(int arr[], int n, int head, int disk_size) {
+    int seek_distance = 0;
+    int left[n], right[n];
+    int left_count = 0, right_count = 0;
+
+    // Split the requests into left and right of the head
+    for (int i = 0; i < n; i++) {
+        if (arr[i] < head) {
+            left[left_count++] = arr[i];
+        } else {
+            right[right_count++] = arr[i];
+        }
+    }
+
+    // Sort left and right arrays
+    qsort(left, left_count, sizeof(int), compare);
+    qsort(right, right_count, sizeof(int), compare);
+
+    // Move towards the right end first
+    for (int i = 0; i < right_count; i++) {
+        seek_distance += abs(right[i] - head);
+        head = right[i];
+    }
+
+    // Reversing direction and moving towards the left end
+    for (int i = left_count - 1; i >= 0; i--) {
+        seek_distance += abs(left[i] - head);
+        head = left[i];
+    }
+    return seek_distance;
+}
+
+// Function to calculate total seek distance for C-SCAN
+int CSCAN(int arr[], int n, int head, int disk_size) {
+    int seek_distance = 0;
+    int left[n], right[n];
+    int left_count = 0, right_count = 0;
+
+    // Split the requests into left and right of the head
+    for (int i = 0; i < n; i++) {
+        if (arr[i] < head) {
+            left[left_count++] = arr[i];
+        } else {
+            right[right_count++] = arr[i];
+        }
+    }
+
+    // Sort left and right arrays
+    qsort(left, left_count, sizeof(int), compare);
+    qsort(right, right_count, sizeof(int), compare);
+
+    // Move towards the right end first
+    for (int i = 0; i < right_count; i++) {
+        seek_distance += abs(right[i] - head);
+        head = right[i];
+    }
+
+    // After reaching the rightmost end, jump to the leftmost and move towards the right
+    seek_distance += abs(disk_size - 1 - head); // Jump to the end
+    head = 0; // Now at the left end
+    for (int i = 0; i < left_count; i++) {
+        seek_distance += abs(left[i] - head);
+        head = left[i];
+    }
+
+    return seek_distance;
+}
+
+// Function to calculate total seek distance for LOOK
+int LOOK(int arr[], int n, int head, int disk_size) {
+    int seek_distance = 0;
+    int left[n], right[n];
+    int left_count = 0, right_count = 0;
+
+    // Split the requests into left and right of the head
+    for (int i = 0; i < n; i++) {
+        if (arr[i] < head) {
+            left[left_count++] = arr[i];
+        } else {
+            right[right_count++] = arr[i];
+        }
+    }
+
+    // Sort left and right arrays
+    qsort(left, left_count, sizeof(int), compare);
+    qsort(right, right_count, sizeof(int), compare);
+
+    // Move towards the right end first
+    for (int i = 0; i < right_count; i++) {
+        seek_distance += abs(right[i] - head);
+        head = right[i];
+    }
+
+    // Reverse direction and move towards the left end
+    for (int i = left_count - 1; i >= 0; i--) {
+        seek_distance += abs(left[i] - head);
+        head = left[i];
+    }
+
+    return seek_distance;
+}
+
+// Function to calculate total seek distance for C-LOOK
+int CLOOK(int arr[], int n, int head, int disk_size) {
+    int seek_distance = 0;
+    int left[n], right[n];
+    int left_count = 0, right_count = 0;
+
+    // Split the requests into left and right of the head
+    for (int i = 0; i < n; i++) {
+        if (arr[i] < head) {
+            left[left_count++] = arr[i];
+        } else {
+            right[right_count++] = arr[i];
+        }
+    }
+
+    // Sort left and right arrays
+    qsort(left, left_count, sizeof(int), compare);
+    qsort(right, right_count, sizeof(int), compare);
+
+    // Move towards the right end first
+    for (int i = 0; i < right_count; i++) {
+        seek_distance += abs(right[i] - head);
+        head = right[i];
+    }
+
+    // After reaching the rightmost end, jump to the leftmost and move towards the right
+    seek_distance += abs(disk_size - 1 - head); // Jump to the end
+    head = left[0]; // Now at the left end
+    for (int i = 0; i < left_count; i++) {
+        seek_distance += abs(left[i] - head);
+        head = left[i];
+    }
+
+    return seek_distance;
+}
+
+int main() {
+    int n, head, disk_size;
+
+    // Input: Number of requests
+    printf("Enter the number of disk requests: ");
+    scanf("%d", &n);
+
+    int requests[n];
+
+    // Input: Disk requests
+    printf("Enter the disk requests (space-separated): ");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &requests[i]);
+    }
+
+    // Input: Initial head position
+    printf("Enter the initial head position: ");
+    scanf("%d", &head);
+
+    // Input: Disk size
+    printf("Enter the total number of tracks on the disk: ");
+    scanf("%d", &disk_size);
+
+    // FCFS
+    int fcfs_seek_distance = FCFS(requests, n, head);
+    printf("FCFS Seek Distance: %d\n", fcfs_seek_distance);
+
+    // SSTF
+    int sstf_seek_distance = SSTF(requests, n, head);
+    printf("SSTF Seek Distance: %d\n", sstf_seek_distance);
+
+    // SCAN
+    int scan_seek_distance = SCAN(requests, n, head, disk_size);
+    printf("SCAN Seek Distance: %d\n", scan_seek_distance);
+
+    // C-SCAN
+    int cscan_seek_distance = CSCAN(requests, n, head, disk_size);
+    printf("C-SCAN Seek Distance: %d\n", cscan_seek_distance);
+
+    // LOOK
+    int look_seek_distance = LOOK(requests, n, head, disk_size);
+    printf("LOOK Seek Distance: %d\n", look_seek_distance);
+
+    // C-LOOK
+    int clook_seek_distance = CLOOK(requests, n, head, disk_size);
+    printf("C-LOOK Seek Distance: %d\n", clook_seek_distance);
+
+    return 0;
+}
